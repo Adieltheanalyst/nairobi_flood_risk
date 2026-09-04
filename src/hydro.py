@@ -186,6 +186,23 @@ def extract_streams(threshold_cells=500, overwrite=False):
     print(f"Saved {vector}")
     return DATA_PROCESSED / "streams.shp"
 
+def compare_thresholds(thresholds=(2000,5000)):
+    _setup()
+    for t in thresholds:
+        extract_streams(threshold_cells=t, overwrite=True)
+        wbt.downslope_distance_to_stream(
+            dem="dem_conditioned.tif",
+            streams="streams.tif",
+            output=f"dist_stream_{t}.tif",
+        )
+        with rasterio.open(DATA_INTERIM / f"dist_stream_{t}.tif") as src:
+            d = src.read(1, masked=True).compressed()
+
+        print(f"\nThreshold {t} cells ({t * 900 / 1e6:.1f} km²)")
+        for q in [10,25,50,75,90,99]:
+            print(f" p{q:<3} {np.percentile(d,q):8.1f} m")
+        print(f" max {d.max():8.1f} m")
+
 if __name__ == "__main__":
     condition_dem()
     compare_conditioning()
