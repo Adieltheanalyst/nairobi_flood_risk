@@ -86,6 +86,33 @@ def check_outliers():
     return units
 
 
+def plot_streams(save=True):
+
+    import contextily as cx
+
+    streams= gpd.read_file(DATA_PROCESSED / "streams.shp")
+    extent = gpd.read_file(
+        DATA_PROCESSED / "processing_extent.gpkg"
+    ).to_crs(CRS_PROJ)
+
+    streams = streams.set_crs(CRS_PROJ, allow_override=True)
+
+    fig, ax =plt.subplots(figsize=(14,12))
+    streams.plot(ax=ax,color="royalblue", linewidth=0.6)
+    extent.boundary.plot(ax=ax,color="red", linewidth=1.5, linestyle="--")
+
+    cx.add_basemap(ax, crs=CRS_PROJ, source=cx.providers.CartoDB.Positron)
+    ax.set_title("Delivered stream network", fontsize=13)
+    ax.set_axis_off()
+    plt.tight_layout()
+
+    if save:
+        FIGURES.mkdir(parents=True, exist_ok=True)
+        plt.savefig(FIGURES / "streams.png", dpi=150, bbox_inches="tight")
+        print(f"Saved {FIGURES / 'streams.png'}")
+
+    plt.show()
+    
 if __name__ == "__main__":
     check_outliers()
     plot_study_area()
