@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# never commit data
+data/
+outputs/rasters/
+
+# but keep the folder structure
+!data/.gitkeep
