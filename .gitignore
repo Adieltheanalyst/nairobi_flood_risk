@@ -9,3 +9,4 @@ outputs/rasters/
 
 # but keep the folder structure
 !data/.gitkeep
+.env
