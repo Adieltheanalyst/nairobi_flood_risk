@@ -56,6 +56,9 @@ def download_dem(dem_type="COP30",overwrite=False):
         for chunk in chunks:
             f.write(chunk)
 
+    print(f"Saved {out} ({out.stat().st_size / 1e6:.1f} MB)")
+    return out
+
 def inspect_dem(path):
     """Print the propertise that matter and sanity-check the elevations."""
     with rasterio.open(path) as src:
@@ -73,10 +76,12 @@ def inspect_dem(path):
         print(f"Masked cells:   {band.mask.sum():,}")
 
 
-def reproject_dem(src_path,overwrite=False):
+def reproject_dem(src_path, overwrite=False):
     """Reproject to EPSG:32737 at 30 m. This is where metres begin."""
-    DATA_INTERIM.mkdir(parents=True,exist_ok=True)
-    out = DATA_INTERIM /  "dem_utm37s_30m.tif"
+    NODATA = -9999.0
+
+    DATA_INTERIM.mkdir(parents=True, exist_ok=True)
+    out = DATA_INTERIM / "dem_utm37s_30m.tif"
     if out.exists() and not overwrite:
         print(f"Already present: {out}")
         return out
@@ -84,20 +89,23 @@ def reproject_dem(src_path,overwrite=False):
     with rasterio.open(src_path) as src:
         transform, width, height = calculate_default_transform(
             src.crs, CRS_PROJ, src.width, src.height, *src.bounds,
-            resolution= TARGET_RESOLUTION_M,
+            resolution=TARGET_RESOLUTION_M,
         )
-        profile=src.profile.copy()
+        profile = src.profile.copy()
         profile.update(
             crs=CRS_PROJ, transform=transform,
             width=width, height=height,
+            nodata=NODATA,                      # <-- 1
             compress="deflate", tiled=True,
         )
-        with rasterio.open(out,"w",**profile) as dst:
+        with rasterio.open(out, "w", **profile) as dst:
             reproject(
-                source=rasterio.band(src,1),
-                destination=rasterio.band(dst,1)
-                ,src_transform=src.transform,src_crs=src.crs,
-                dst_transform=transform,dst_crs=CRS_PROJ,
+                source=rasterio.band(src, 1),
+                destination=rasterio.band(dst, 1),
+                src_transform=src.transform, src_crs=src.crs,
+                dst_transform=transform, dst_crs=CRS_PROJ,
+                src_nodata=src.nodata,          # <-- 2
+                dst_nodata=NODATA,              # <-- 3
                 resampling=Resampling.bilinear,
             )
 
