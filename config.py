@@ -1,4 +1,9 @@
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+OPENTOPO_API_KEY = os.getenv("OPENTOPO_API_KEY")
 
 ROOT= Path(__file__).parent
 DATA_RAW=ROOT / "data" / "raw"
