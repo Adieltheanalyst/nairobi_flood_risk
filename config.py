@@ -29,3 +29,15 @@ FLOOD_EVENTS= {
     "mar_2026":("2024-03-01","2024-06-30")
 }
 
+# Admin boundaries
+ADMIN_COUNTIES = DATA_RAW / "ken_admin1.shp"
+ADMIN_CONSTITUENIES= DATA_RAW / "ken_admin2.shp"
+ADMIN_WARDS = DATA_RAW / "geoBoundaries-KEN-ADM3.geojson"
+
+ADMIN_REFERENCE = ADMIN_CONSTITUENIES
+
+COUNTY_COL = "adm1_name"
+UNIT_COL = "adm2_name"
+UNIT_PCODE_COL = "adm2_pcode"
+
+FOCUS_COUNTIES=None
