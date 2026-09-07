@@ -2,7 +2,7 @@ import shutil
 import numpy as np
 import rasterio
 import whitebox
-
+from config import STREAM_THRESHOLD_CELLS
 from config import DATA_INTERIM,DATA_PROCESSED
 
 wbt= whitebox.WhiteboxTools()
@@ -154,7 +154,7 @@ def locate_largest_fill(top_n=5):
         print(f"  {r['lat']:.5f}, {r['lon']:.5f}   ({r['fill_m']:.1f} m)")
     return gdf
 
-def extract_streams(threshold_cells=500, overwrite=False):
+def extract_streams(threshold_cells=STREAM_THRESHOLD_CELLS, overwrite=False):
     """Extract the stream network from flow accumulation.
 
     threshold_cells is the contributing area, in 30 m cells, required
@@ -202,6 +202,24 @@ def compare_thresholds(thresholds=(2000,5000)):
         for q in [10,25,50,75,90,99]:
             print(f" p{q:<3} {np.percentile(d,q):8.1f} m")
         print(f" max {d.max():8.1f} m")
+
+def compute_hand(overwrite=False):
+    _setup()
+    out= DATA_INTERIM / "hand.tif"
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+        return out
+
+    print("Computing HAND....")
+    wbt.elevation_above_stream(
+        dem="dem_conditioned.tif",
+        streams="streams.tif",
+        output="hand.tif",
+    )
+    with rasterio.open(out) as src:
+        h = src.read(1, masked=True).compressed()
+    print()
+
 
 if __name__ == "__main__":
     condition_dem()
