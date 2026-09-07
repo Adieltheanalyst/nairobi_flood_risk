@@ -1,6 +1,9 @@
 import numpy as np
 import rasterio
-from config import DATA_PROCESSED,OUTPUTS
+from config import DATA_PROCESSED,OUTPUTS,UNIT_COL
+import geopandas as gpd
+from rasterstats import zonal_stats
+
 
 def _rescale(a,low,high, invert=False):
     s= np.clip((a-low)/ (high-low), 0, 1)
@@ -63,7 +66,30 @@ def rank_units(top_n=25):
     units["high_share"] = [s["hi"] for s in hi]
 
     r = (units[[UNIT_COL, COUNTY_COL, "hazard_mean", "high_share"]]
-         .sort_values("hazard_mean", ascending=False)
+         .sort_values("high_share", ascending=False)
          .head(top_n))
     print(r.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     return r
+
+
+def unit_profile(names,path=None):
+    units = gpd.read_file(DATA_PROCESSED / "study_units.gpkg")
+    units = units[units[UNIT_COL].isin(names)]
+    path= path or str(OUTPUTS / "rasters" / "hazard_index.tif")
+
+    stats =  zonal_stats(
+        units, path, nodata=-9999.0,
+        stats=["mean", "max", "count"], 
+        add_stats={
+            "p75": lambda x: float(np.percentile(x.compressed(), 75)),
+            "p90": lambda x: float(np.percentile(x.compressed(), 90)),
+            "p99": lambda x: float(np.percentile(x.compressed(), 99)),
+        },
+    )
+
+    print(f"{'unit':<18} {'area km²':>9} {'mean':>7} {'p75':>7} "
+          f"{'p90':>7} {'p99':>7} {'max':>7}")
+    for name, s in zip(units[UNIT_COL], stats):
+        km2 = s["count"] * 900 / 1e6
+        print(f"{name:<18} {km2:9.1f} {s['mean']:7.3f} {s['p75']:7.3f} "
+              f"{s['p90']:7.3f} {s['p99']:7.3f} {s['max']:7.3f}")
