@@ -12,6 +12,7 @@ FEATURES = {
     "dist_stream": "dist_stream_2000.tif",
     "dist_euclid": "dist_euclid.tif",
     "elevation":   "dem_conditioned.tif",
+    "built_frac":  "built_frac.tif",
 }
 
 
@@ -84,7 +85,7 @@ def summarise_stack():
 
 
 def align_to_stack(src_path,out_name, resampling="bilinear", overwrite=False):
-    out = DATA_INTERIM . out_name
+    out = DATA_INTERIM / out_name
     if out.exists() and not overwrite:
         print(f"Already Present: {out.name}")
         return out
@@ -93,7 +94,7 @@ def align_to_stack(src_path,out_name, resampling="bilinear", overwrite=False):
         "nearest": Resampling.nearest,
         "average": Resampling.average,
     }
-    with rasterio.open(DATA_PROCESSED , "feature_stack.tif") as ref:
+    with rasterio.open(DATA_PROCESSED / "feature_stack.tif") as ref:
         profile = ref.profile.copy()
         profile.update(count=1, dtype="float32", nodata=-9999.0)
         dst_crs, dst_transform = ref.crs, ref.transform
@@ -106,7 +107,7 @@ def align_to_stack(src_path,out_name, resampling="bilinear", overwrite=False):
                   src_transform=src.transform,src_crs=src.crs,
                   src_nodata=src.nodata,
                   dst_transform=dst_transform,dst_crs=dst_crs,
-                  dst_nodata=9999.0,
+                  dst_nodata= -9999.0,
                   resampling=methods[resampling],)
 
     with rasterio.open(out,"w",**profile) as f:
