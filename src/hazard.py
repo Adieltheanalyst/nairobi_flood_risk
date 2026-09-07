@@ -19,15 +19,15 @@ def hazard_index(overwrite=False):
 
         profile = src.profile.copy()
 
-    h = _rescale(bands["hand"], 2, 25,invert=True)
+    h = _rescale(bands["hand"], 1, 8,invert=True)
 
-    t= _rescale(bands["twi"],6,13)
+    t= _rescale(bands["twi"],10,15)
 
-    s= _rescale(bands["slope"], 0.5,6,invert=True)
+    s= _rescale(bands["slope"], 0.3,2.0,invert=True)
 
-    d = _rescale(bands["dist_euclid"],50,800,invert=True)
+    d = _rescale(bands["dist_euclid"],30,300,invert=True)
 
-    idx = 0.45 * h + 0.25 * t + 0.15 * s + 0.15 * d
+    idx = 0.55 * h + 0.20 * t + 0.10 * s + 0.15 * d
 
     profile.update(count=1, dtype="float32", nodata=-9999.0)
     out.parent.mkdir(parents=True, exist_ok=True)
