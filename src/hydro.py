@@ -218,7 +218,24 @@ def compute_hand(overwrite=False):
     )
     with rasterio.open(out) as src:
         h = src.read(1, masked=True).compressed()
-    print()
+    print(f"HAND p10 {np.percentile(h, 10):6.1f} m")
+    print(f"HAND p50 {np.percentile(h, 50):6.1f} m")
+    print(f"HAND p90 {np.percentile(h, 90):6.1f} m")
+    print(f"HAND max {h.max():6.1f} m")
+
+    print(f"Saved {out}")
+    return out
+
+def compute_terrain_features(overwrite=False):
+    """Slope, curvature, TWI and Euclidean distance to drainage."""
+    _setup()
+
+    if (DATA_INTERIM / "twi.tif").exists() and not overwrite:
+        print("Already presents: terrain features")
+        return
+
+    print("Slope...")
+    wbt.slope(dem="dem_conditioned.tif", output="slope.tif")
 
 
 if __name__ == "__main__":
