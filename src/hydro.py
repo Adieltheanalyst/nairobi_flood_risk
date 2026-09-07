@@ -5,6 +5,8 @@ import whitebox
 from config import STREAM_THRESHOLD_CELLS
 from config import DATA_INTERIM,DATA_PROCESSED
 
+from scipy.ndimage import distance_transform_edt
+
 wbt= whitebox.WhiteboxTools()
 wbt.verbose = False
 def _setup():
@@ -256,6 +258,34 @@ def compute_terrain_features(overwrite=False):
 
     print("Done.")
 
+
+def compute_euclidean_distance(overwrite=False):
+    """Straight-line distance to the nearest stream cell (scipy)."""
+    out = DATA_INTERIM / "dist_euclid.tif"
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+        return out
+
+    with rasterio.open(DATA_INTERIM / "streams.tif") as src:
+        arr = src.read(1, masked=True)
+        profile = src.profile.copy()
+        pixel_size = abs(src.transform.a)
+
+    is_stream = arr.filled(0) > 0
+    print(f"Stream cells: {is_stream.sum():,}")
+
+    # distance_transform_edt measures distance to the nearest zero,
+    # so invert: non-stream cells become True, streams become zero.
+    dist = distance_transform_edt(~is_stream) * pixel_size
+
+    profile.update(dtype="float32", nodata=-9999.0)
+    with rasterio.open(out, "w", **profile) as dst:
+        dst.write(dist.astype("float32"), 1)
+
+    print(f"p10 {np.percentile(dist, 10):8.1f} m")
+    print(f"p50 {np.percentile(dist, 50):8.1f} m")
+    print(f"p90 {np.percentile(dist, 90):8.1f} m")
+    return out
 
 if __name__ == "__main__":
     condition_dem()
