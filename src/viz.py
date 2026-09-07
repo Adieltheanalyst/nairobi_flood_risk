@@ -2,8 +2,10 @@
 import contextily as cx
 import geopandas as gpd
 import matplotlib.pyplot as plt
+from rasterio.plot import show
+import rasterio
 
-from config import CRS_PROJ, DATA_PROCESSED, FIGURES, UNIT_COL
+from config import CRS_PROJ, DATA_PROCESSED, FIGURES, UNIT_COL, DATA_INTERIM
 
 def plot_study_area(save=True):
     """Two-panel plot: regional overview and Nairobi detail."""
@@ -112,7 +114,24 @@ def plot_streams(save=True):
         print(f"Saved {FIGURES / 'streams.png'}")
 
     plt.show()
-    
+
+def plot_hand(vmax=30, save=True):
+    fig,ax= plt.subplots(figsize=(14,12))
+    with rasterio.open(DATA_INTERIM / "hand.tif") as src:
+        show(src, ax=ax, cmap="RdY1Bu", vmin=0, vmax=vmax)
+
+    cx.add_basemap(ax, crs=CRS_PROJ, source=cx.providers.CartoDB.Positron,
+                   alpha=0.4)
+    ax.set_title(f"HAND (m above nearest drainage, clipped at {vmax} m)")
+    ax.set_axis_off()
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(FIGURES / "hand.png", dpi=150, bbox_inches="tight")
+    plt.show()
+
+
+
 if __name__ == "__main__":
     check_outliers()
     plot_study_area()
