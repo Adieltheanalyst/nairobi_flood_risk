@@ -39,3 +39,31 @@ def hazard_index(overwrite=False):
         print(f"p{q:<3} {np.percentile(v, q):.3f}")
     print(f"\nSaved {out}")
     return out
+
+
+def rank_units(top_n=25):
+    """Mean hazard and high-hazard area share, by admin unit."""
+    import geopandas as gpd
+    from rasterstats import zonal_stats
+    from config import UNIT_COL, COUNTY_COL
+
+    units = gpd.read_file(DATA_PROCESSED / "study_units.gpkg")
+    path = str(OUTPUTS / "rasters" / "hazard_index.tif")
+
+    stats = zonal_stats(units, path, stats=["mean"], nodata=-9999.0)
+    units["hazard_mean"] = [s["mean"] for s in stats]
+
+    # Share of each unit above the 90th percentile of the whole raster
+    with rasterio.open(path) as src:
+        thr = np.percentile(src.read(1, masked=True).compressed(), 90)
+
+    hi = zonal_stats(units, path, stats=["mean"], nodata=-9999.0,
+                     band=1, add_stats={"hi": lambda x: float(
+                         (x > thr).sum()) / max(x.count(), 1)})
+    units["high_share"] = [s["hi"] for s in hi]
+
+    r = (units[[UNIT_COL, COUNTY_COL, "hazard_mean", "high_share"]]
+         .sort_values("hazard_mean", ascending=False)
+         .head(top_n))
+    print(r.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+    return r
