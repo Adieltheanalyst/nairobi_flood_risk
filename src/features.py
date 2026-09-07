@@ -1,6 +1,6 @@
 import numpy as np
 import rasterio
-
+from rasterio.warp import reproject, Resampling
 from config import DATA_INTERIM, DATA_PROCESSED
 
 FEATURES = {
@@ -81,6 +81,44 @@ def summarise_stack():
             print(f"{name:<13} {np.percentile(v, 10):9.2f} "
                   f"{np.percentile(v, 50):9.2f} "
                   f"{np.percentile(v, 90):9.2f} {pct:7.1f}%")
+
+
+def align_to_stack(src_path,out_name, resampling="bilinear", overwrite=False):
+    out = DATA_INTERIM . out_name
+    if out.exists() and not overwrite:
+        print(f"Already Present: {out.name}")
+        return out
+    methods = {
+        "bilinear": Resampling.bilinear,
+        "nearest": Resampling.nearest,
+        "average": Resampling.average,
+    }
+    with rasterio.open(DATA_PROCESSED , "feature_stack.tif") as ref:
+        profile = ref.profile.copy()
+        profile.update(count=1, dtype="float32", nodata=-9999.0)
+        dst_crs, dst_transform = ref.crs, ref.transform
+        width, height = ref.width, ref.height
+
+    with rasterio.open(src_path) as src:
+        dst=np.full((height,width), -9999.0, dtype="float32")
+        reproject(source=rasterio.band(src,1),
+                  destination=dst,
+                  src_transform=src.transform,src_crs=src.crs,
+                  src_nodata=src.nodata,
+                  dst_transform=dst_transform,dst_crs=dst_crs,
+                  dst_nodata=9999.0,
+                  resampling=methods[resampling],)
+
+    with rasterio.open(out,"w",**profile) as f:
+        f.write(dst,1)
+
+    valid = dst[dst != -9999.0]
+    print(f"{out.name}: p10 {np.percentile(valid, 10):.2f}  "
+          f"p50 {np.percentile(valid, 50):.2f}  "
+          f"p90 {np.percentile(valid, 90):.2f}")
+    return out
+        
+
 
 
 if __name__ == "__main__":
