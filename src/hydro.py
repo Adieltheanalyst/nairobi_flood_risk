@@ -237,6 +237,25 @@ def compute_terrain_features(overwrite=False):
     print("Slope...")
     wbt.slope(dem="dem_conditioned.tif", output="slope.tif")
 
+    print("Plan curvature")
+    wbt.plan_curvature(de="dem_conditioned.tif", output="plan_curv.tif")
+
+    print("Profile curvature...")
+    wbt.profile_curvature(dem="dem_conditioned.tif", output="prof_curv.tif")
+
+    print("Specific contributing area (D-infinity)...")
+    wbt.d_inf_flow_accumulation(
+        i="dem_conditioned.tif", output="sca.tif", out_type="specific contributing area"
+    )
+
+    print("TWI...")
+    wbt.wetness_index(sca="sca.tif", slope="slope.tif", output="twi.tif")
+
+    print("Euclidean distance to drainage...")
+    wbt.euclidean_distance(i="streams.tif", output="dist_euclid.tif")
+
+    print("Done.")
+
 
 if __name__ == "__main__":
     condition_dem()
