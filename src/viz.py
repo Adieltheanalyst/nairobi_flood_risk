@@ -118,7 +118,7 @@ def plot_streams(save=True):
 def plot_hand(vmax=30, save=True):
     fig,ax= plt.subplots(figsize=(14,12))
     with rasterio.open(DATA_INTERIM / "hand.tif") as src:
-        show(src, ax=ax, cmap="RdY1Bu", vmin=0, vmax=vmax)
+        show(src, ax=ax, cmap="Rdl1Bu", vmin=0, vmax=vmax)
 
     cx.add_basemap(ax, crs=CRS_PROJ, source=cx.providers.CartoDB.Positron,
                    alpha=0.4)
