@@ -12,7 +12,7 @@ FEATURES = {
     "dist_stream": "dist_stream_2000.tif",
     "dist_euclid": "dist_euclid.tif",
     "elevation":   "dem_conditioned.tif",
-    "built_frac":  "built_frac.tif",
+    "built_frac":  "built_frac_norm.tif",
 }
 
 
@@ -143,9 +143,20 @@ def normalise_built(cell_area_m2=8600.0, overwrite=False):
 
     v= frac[valid]
     for q in (10,50, 75,90,95,99):
-        print(f"p{q:<3} [np.percentile(v,q):.3f]")
+        print(f"p{q:<3} {np.percentile(v,q):.3f}")
     return out
 
+def extract_band(name, out_name=None):
+    out= DATA_INTERIM / (out_name or f"{name}.tif")
+    i = list(FEATURES).index(name) + 1
+    with rasterio.open(DATA_PROCESSED / "feature_stack.tif") as src:
+        arr =src.read(i)
+        profile= src.profile.copy()
+    profile.update(count=1)
+    with rasterio.open(out, "w", **profile) as f:
+        f.write(arr,1)
+    print(f"Extracted band {i} ({name}) -> {out.name}")
+    return out
 
 
 if __name__ == "__main__":

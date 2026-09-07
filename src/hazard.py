@@ -30,7 +30,9 @@ def hazard_index(overwrite=False):
 
     d = _rescale(bands["dist_euclid"],30,300,invert=True)
 
-    idx = 0.55 * h + 0.20 * t + 0.10 * s + 0.15 * d
+    b = _rescale(bands["built_frac"], 0.05,0.35)
+
+    idx = 0.40 * h + 0.15 * t + 0.10 * s + 0.15 * d + 0.20 * b
 
     profile.update(count=1, dtype="float32", nodata=-9999.0)
     out.parent.mkdir(parents=True, exist_ok=True)
