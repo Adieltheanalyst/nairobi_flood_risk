@@ -134,6 +134,8 @@ def plot_hazard(save=True):
     fig,ax = plt.subplots(figsize=(14,12))
     with rasterio.open(OUTPUTS / "rasters" / "hazard_index.tif") as src:
         show(src,ax=ax, cmap= "YlOrRd", vmin=0, vmax=1)
+    ax.set_xlim(240000, 275000)
+    ax.set_ylim(9845000, 9868000)
     cx.add_basemap(ax, crs=CRS_PROJ, 
                    source=cx.providers.CartoDB.Positron, alpha=0.4)
 
