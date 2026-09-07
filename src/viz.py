@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from rasterio.plot import show
 import rasterio
 
-from config import CRS_PROJ, DATA_PROCESSED, FIGURES, UNIT_COL, DATA_INTERIM
+from config import CRS_PROJ, DATA_PROCESSED, FIGURES, UNIT_COL, DATA_INTERIM, OUTPUTS
 
 def plot_study_area(save=True):
     """Two-panel plot: regional overview and Nairobi detail."""
@@ -130,6 +130,19 @@ def plot_hand(vmax=30, save=True):
         plt.savefig(FIGURES / "hand.png", dpi=150, bbox_inches="tight")
     plt.show()
 
+def plot_hazard(save=True):
+    fig,ax = plt.subplots(figsize=(14,12))
+    with rasterio.open(OUTPUTS / "rasters" / "hazard_index.tif") as src:
+        show(src,ax=ax, cmap= "YlOrRd", vmin=0, vmax=1)
+    cx.add_basemap(ax, crs=CRS_PROJ, 
+                   source=cx.providers.CartoDB.Positron, alpha=0.4)
+
+    ax.set_title("Heuristic flood hazard index")
+    ax.set_axis_off()
+    plt.tight_layout()
+    if save:
+        plt.savefig(FIGURES / "hazard.png", dpi=150,bbox_inches="tight")
+    plt.show()
 
 
 if __name__ == "__main__":
