@@ -238,7 +238,7 @@ def compute_terrain_features(overwrite=False):
     wbt.slope(dem="dem_conditioned.tif", output="slope.tif")
 
     print("Plan curvature")
-    wbt.plan_curvature(de="dem_conditioned.tif", output="plan_curv.tif")
+    wbt.plan_curvature(dem="dem_conditioned.tif", output="plan_curv.tif")
 
     print("Profile curvature...")
     wbt.profile_curvature(dem="dem_conditioned.tif", output="prof_curv.tif")
