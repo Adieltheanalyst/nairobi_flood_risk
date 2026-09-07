@@ -118,7 +118,33 @@ def align_to_stack(src_path,out_name, resampling="bilinear", overwrite=False):
           f"p50 {np.percentile(valid, 50):.2f}  "
           f"p90 {np.percentile(valid, 90):.2f}")
     return out
-        
+
+
+def normalise_built(cell_area_m2=8600.0, overwrite=False):
+
+    src_path = DATA_INTERIM / "built_frac.tif"
+    out = DATA_INTERIM / "built_frac_norm.tif"
+
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+        return out
+
+    with rasterio.open(src_path) as src:
+        arr = src.read(1)
+        profile = src.profile.copy()
+
+    valid = arr != -9999.0
+    print(f"Raw max: {arr[valid].max():.1f} m²")
+
+    frac = np.where(valid,np.clip(arr / cell_area_m2,0,1), -9999.0)
+
+    with rasterio.open(out, "w", **profile) as f:
+        f.write(frac.astype("float32"), 1)
+
+    v= frac[valid]
+    for q in (10,50, 75,90,95,99):
+        print(f"p{q:<3} [np.percentile(v,q):.3f]")
+    return out
 
 
 
