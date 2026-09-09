@@ -48,3 +48,16 @@ UNIT_COL = "adm2_name"
 UNIT_PCODE_COL = "adm2_pcode"
 
 FOCUS_COUNTIES=None
+# Roads
+
+ROADS_SOURCE = DATA_RAW / "gis_osm_roads_free_1.shp"
+ROAD_CLASSES = [
+    "motorway", "motorway_link",
+    "trunk", "trunk_link",
+    "primary", "primary_link",
+    "secondary", "secondary_link",
+    "tertiary", "tertiary_link",
+]
+
+ROAD_BUFFER_M = 15 
+SEGMENT_LENGTH_M = 100 
