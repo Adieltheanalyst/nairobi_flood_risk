@@ -79,7 +79,9 @@ def sample_points(spacing=SAMPLE_SPACING_M, edge_buffer=FLOOD_EDGE_BUFFER_M):
     flood = gpd.read_file(UNOSAT_FLOOD).to_crs(CRS_PROJ)
     region_geom = region.union_all()
     flood_geom=flood.union_all()
-    ambigous = flood_geom.buffer(edge_buffer).difference(flood_geom)
+    flood_simple = flood_geom.simplify(10, preserve_topology=True)
+
+    ambigous = flood_simple.buffer(edge_buffer).difference(flood_geom)
 
     xmin,ymin,xmax, ymax= region.total_bounds
     xs = np.arange(xmin,xmax,spacing)
