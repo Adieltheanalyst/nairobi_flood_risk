@@ -61,3 +61,6 @@ ROAD_CLASSES = [
 
 ROAD_BUFFER_M = 15 
 SEGMENT_LENGTH_M = 100 
+# FLOOD LABELS
+AI4G_RECURRENCE = DATA_RAW / "S03E036-recurrence-80m-buffer.tif"
+AI4G_PARQUET = DATA_RAW / "S03E036-post-processing.parquet"
