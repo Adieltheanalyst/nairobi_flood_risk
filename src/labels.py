@@ -7,6 +7,9 @@ from config import (
     UNOSAT_ANALYSIS,UNOSAT_FLOOD, UNOSAT_CLOUD, UNOSAT_ROADS,
     SAMPLE_SPACING_M, FLOOD_EDGE_BUFFER_M,
 )
+from shapely.prepared import prep
+
+
 
 AI4G_RECURRENCE = DATA_RAW / "S03E036-recurrence-80m-buffer.tif"
 AI4G_PARQUET = DATA_RAW / "S03E036-post-processing.parquet"
@@ -79,20 +82,31 @@ def sample_points(spacing=SAMPLE_SPACING_M, edge_buffer=FLOOD_EDGE_BUFFER_M):
     flood = gpd.read_file(UNOSAT_FLOOD).to_crs(CRS_PROJ)
     region_geom = region.union_all()
     flood_geom=flood.union_all()
+
     flood_simple = flood_geom.simplify(10, preserve_topology=True)
 
-    ambigous = flood_simple.buffer(edge_buffer).difference(flood_geom)
+    ambigous = flood_simple.buffer(edge_buffer).difference(flood_simple)
+
+
+    region_p=prep(region_geom)
+    flood_p =prep(flood_geom)
+    ambigous_p =prep(ambigous)
 
     xmin,ymin,xmax, ymax= region.total_bounds
     xs = np.arange(xmin,xmax,spacing)
     ys = np.arange(ymin,ymax, spacing)
     grid=[Point(x,y) for x in xs for y in ys]
+    print(f"Grid: {len(grid):,} candidate points")
+
+    inside = [p for p in grid if region_p.contains(p)]
+    print(f"Inside observation region: {len(inside):,}")
 
     pts = gpd.GeoDataFrame(geometry=grid,crs=CRS_PROJ)
-    pts = pts[pts.within(region_geom)].copy()
+    # pts = pts[pts.within(region_geom)].copy()
 
-    pts["flooded"] = pts.within(flood_geom).astype(int)
-    pts["ambigous"] = pts.within(ambigous)
+    pts["flooded"] = [int(flood_p.contains(p)) for p in inside]
+
+    pts["ambigous"] = [ambigous_p.contains(p) for p in inside]
 
     keep=(pts["flooded"]==1) | (~pts["ambigous"])
     pts=pts[keep].drop(columns="ambigous").copy()
