@@ -4,6 +4,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 from rasterio.plot import show
 import rasterio
+import numpy as np
 
 from config import CRS_PROJ, DATA_PROCESSED, FIGURES, UNIT_COL, DATA_INTERIM, OUTPUTS
 
@@ -144,6 +145,27 @@ def plot_hazard(save=True):
     plt.tight_layout()
     if save:
         plt.savefig(FIGURES / "hazard.png", dpi=150,bbox_inches="tight")
+    plt.show()
+
+def plot_flood_recurrence(save=True):
+    with rasterio.open(DATA_INTERIM / "flood_recurrence.tif") as src:
+        arr = src.read(1)
+        ext = rasterio.plot.plotting_extent(src)
+
+    masked = np.ma.masked_where(arr < 2, arr)
+    fig, ax = plt.subplots(figsize=(14,12))
+
+    im = ax.imshow(masked,extent=ext,cmap="YlOrRd", vmin=2,vmax=5)
+    cx.add_basemap(ax,crs=CRS_PROJ,
+                   source=cx.providers.CartoDB.Positron, alpha=0.5)
+
+    plt.colorbar(im,ax=ax, shrink=0.6, label="value (N =N-1 months)")
+    ax.set_title("AI4G flood detections, 2014-2024")
+    ax.set_axis_off()
+    plt.tight_layout()
+    if save:
+        plt.savefig(FIGURES / "ai4g_detections.png", dpi=150,
+                    bbox_inches="tight")
     plt.show()
 
 
