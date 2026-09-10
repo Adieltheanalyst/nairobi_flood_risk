@@ -25,6 +25,7 @@ def load_roads():
 
     total_km = roads.length.sum() / 1000
     print(f"Total network length: {total_km:,.0f} Km")
+    return roads
 
 
 def segment_roads(roads, length_m= SEGMENT_LENGTH_M):
@@ -38,7 +39,7 @@ def segment_roads(roads, length_m= SEGMENT_LENGTH_M):
             parts = [geom]
 
         for part in parts:
-            n = max(1, int(np.ceil(part.lenth/ length_m)))
+            n = max(1, int(np.ceil(part.length/ length_m)))
             for i in range(n):
                 seg = substring(
                     part, i * length_m, min((i+1) * length_m, part.length)
@@ -70,8 +71,11 @@ def sample_hazard(segs,buffer_m=ROAD_BUFFER_M):
     segs["hazard_max"]= [s["max"] for s in stats]
     segs["n_cells"] = [s["count"] for s in stats]
     hand=str(DATA_INTERIM / "hand.tif")
-    hstats = zonal_stats(buf, hand, nodata=-9999.0, stats=["min", "mean"])
-    segs["hand_min"] = [s["min"] for s in hstats]
+    hstats = zonal_stats(
+        buf, hand, nodata=-9999.0, stats=["mean"], 
+        add_stats={"p25": lambda x: (float(np.percentile(x.compressed(),25))
+                                     if x.compressed().size else None)},)
+    segs["hand_p25"] = [s["p25"] for s in hstats]
     segs["hand_mean"] = [s["mean"] for s in hstats]
 
     segs = segs[segs["n_cells"] > 0].copy()
@@ -92,12 +96,12 @@ def build(overwrite=False):
     return segs 
 
 def rank_segments(top_n= 30 ,min_class=None):
-    segs=gpd.read_file(DATA_PROCESSED / "road_segments.gkpg")
+    segs=gpd.read_file(DATA_PROCESSED / "road_segments.gpkg")
     if min_class:
         segs = segs[segs["fclass"].isin(min_class)]
 
     r= segs.sort_values("hazard_mean", ascending=False).head(top_n)
-    cols = ["name", "fclass", "hazard_mean", "hazard_max", "hand_min"]
+    cols = ["name", "fclass", "hazard_mean", "hazard_max", "hand_p25"]
     print(r[cols].to_string(index=False, float_format=lambda x: f"{x:.2f}"))
     return r
 
@@ -117,7 +121,7 @@ def rank_roads(top_n=25):
         exposed=("hazard_mean",lambda x: (x> thr).sum()),
     )
     g["exposed_share"]= g["exposed"] / g["segments"]
-    g = g[g["length_km"] > 1]
+    g = g[g["length_km"] > 2]
 
     r = g.sort_values("exposed_share", ascending=False).head(top_n)
     print(r.to_string(float_format=lambda x: f"{x:.2f}"))
@@ -129,4 +133,3 @@ if __name__==  "__main__":
     rank_segments()
     print("\n--- Roads by exposed share ---")
     rank_roads()
-    
