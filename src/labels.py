@@ -8,6 +8,8 @@ from config import (
     SAMPLE_SPACING_M, FLOOD_EDGE_BUFFER_M,
 )
 from shapely.prepared import prep
+import pandas as pd
+
 
 
 
@@ -122,3 +124,49 @@ def sample_points(spacing=SAMPLE_SPACING_M, edge_buffer=FLOOD_EDGE_BUFFER_M):
     pts.to_file(out,driver="GPKG")
     print(f"Saved{out}")
     return pts
+
+def extract_features(overwrite=False):
+    out=DATA_PROCESSED / "training_table.csv"
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+
+        return pd.read_csv(out)
+
+    pts = gpd.read_file(DATA_PROCESSED / "label_points.gpkg")
+
+    with rasterio.open(DATA_PROCESSED / "feature_stack.tif") as src:
+        names = list(src.descriptions)
+        coords = [(p.x,p.y) for p in pts.geometry]
+        vals =np.array(list(src.sample(coords)), dtype="float32")
+        nodata=src.nodata
+
+    for i, name in enumerate(names):
+        pts[name] = vals[:, i]
+
+    before = len(pts)
+    mask = (vals != nodata).all(axis=1)
+    pts=pts[mask].copy()
+    print(f"Dropped {before - len(pts)} points with nodata features")
+
+    df = pd.DataFrame(pts.drop(columns="geometry"))
+    df.to_csv(out, index=False)
+
+    print(f"\n{len(df):,} rows, {len(names)} features")
+    print(f"Presences: {(df.flooded==1).sum():,}  "
+          f"Absences: {(df.flooded==0).sum():,}")
+    print(f"Saved {out}")
+    return df
+
+def compare_distributions():
+    df=pd.read_csv(DATA_PROCESSED / "training_table.csv")
+    feats = ["hand", "slope", "twi", "dist_stream", "dist_euclid",
+             "elevation", "built_frac", "plan_curv", "prof_curv"]
+
+    print(f"{'feature':<13} {'flooded p50':>12} {'dry p50':>10} {'ratio':>8}")
+    for f in feats:
+        a = df.loc[df.flooded == 1, f].median()
+        b = df.loc[df.flooded == 0, f].median()
+        r = a / b if b else float("nan")
+        print(f"{f:<13} {a:12.2f} {b:10.2f} {r:8.2f}")
+
+
