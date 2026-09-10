@@ -101,7 +101,7 @@ def sample_points(spacing=SAMPLE_SPACING_M, edge_buffer=FLOOD_EDGE_BUFFER_M):
     inside = [p for p in grid if region_p.contains(p)]
     print(f"Inside observation region: {len(inside):,}")
 
-    pts = gpd.GeoDataFrame(geometry=grid,crs=CRS_PROJ)
+    pts = gpd.GeoDataFrame(geometry=inside,crs=CRS_PROJ)
     # pts = pts[pts.within(region_geom)].copy()
 
     pts["flooded"] = [int(flood_p.contains(p)) for p in inside]
