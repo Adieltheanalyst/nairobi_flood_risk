@@ -287,6 +287,96 @@ def compute_euclidean_distance(overwrite=False):
     print(f"p90 {np.percentile(dist, 90):8.1f} m")
     return out
 
+def _constant_raster(value, name):
+    """Write a raster of one constant value on the working grid."""
+    with rasterio.open(DATA_INTERIM / "dem_conditioned.tif") as src:
+        profile = src.profile.copy()
+        shape = (src.height, src.width)
+    profile.update(dtype="float32", nodata=None, count=1)
+    arr = np.full(shape, value, dtype="float32")
+    out = DATA_INTERIM / name
+    with rasterio.open(out, "w", **profile) as dst:
+        dst.write(arr, 1)
+    return out
+
+
+def upstream_impervious(overwrite=False):
+    """Accumulated impervious area upstream of each cell, log10 km².
+
+    built_frac measures how built-up a cell IS. This measures how much
+    impervious surface DRAINS TO it — the driver of pluvial flooding,
+    since runoff arrives from upslope through channels sized for a
+    catchment that may since have been concreted over.
+    """
+    _setup()
+    out = DATA_INTERIM / "upstream_imperv.tif"
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+        return out
+
+    _constant_raster(1.0, "ones.tif")
+    _constant_raster(0.0, "zeros.tif")
+
+    print("Routing built fraction downstream...")
+    wbt.d8_mass_flux(
+        dem="dem_conditioned.tif",
+        loading="built_frac_norm.tif",
+        efficiency="ones.tif",
+        absorption="zeros.tif",
+        output="facc_built.tif",
+    )
+
+    with rasterio.open(DATA_INTERIM / "facc_built.tif") as src:
+        built_acc = src.read(1, masked=True)
+        profile = src.profile.copy()
+
+    # Accumulated impervious AREA in km², not the upstream proportion.
+    # The ratio version divided two quantities that grow together, which
+    # recovers the catchment mean and converges to the citywide average —
+    # it carried no more signal than built_frac itself.
+    imperv_km2 = built_acc * 900 / 1e6
+
+    # Log scale: values span four orders of magnitude, and the step from
+    # 0.01 to 0.1 km² matters as much as the step from 10 to 100.
+    imperv_log = np.log10(np.ma.filled(imperv_km2, 0) + 1e-6)
+    arr = np.where(built_acc.mask, -9999.0, imperv_log)
+
+    profile.update(dtype="float32", nodata=-9999.0, count=1)
+    with rasterio.open(out, "w", **profile) as dst:
+        dst.write(arr.astype("float32"), 1)
+
+    v = arr[arr != -9999.0]
+    for q in (10, 50, 90, 99):
+        p = np.percentile(v, q)
+        print(f"p{q:<3} log10 {p:7.3f}  = {10**p:10.4f} km²")
+    print(f"Saved {out}")
+    return out
+
+def depression_depth(overwrite=False):
+    out = DATA_INTERIM / "fill_depth.tif"
+    if out.exists() and not overwrite:
+        print(f"Already present: {out.name}")
+        return out
+
+    with rasterio.open(DATA_INTERIM / "dem_utm37s_30m.tif") as src:
+        original = src.read(1, masked = True)
+        profile=src.profile.copy()
+
+    with rasterio.open(DATA_INTERIM / "dem_conditioned.tif") as src:
+        conditioned = src.read(1, masked=True)
+    depth=np.clip(conditioned - original, 0, None)
+
+    profile.update(dtype="float32", nodata=-9999.0)
+    with rasterio.open(out,"w",**profile) as dst:
+        dst.write(np.ma.filled(depth, -9999.0).astype("float32"),1)
+
+    v=np.ma.compressed(depth)
+    print(f"Cells with pounding: {(v>0.01).sum():,}")
+    for q in (50,90,99):
+        print(f"p{q:<3} {np.percentile(v,q):.2f} m")
+    print(f"Saved {out}")
+    return out
+
 if __name__ == "__main__":
     condition_dem()
     compare_conditioning()
