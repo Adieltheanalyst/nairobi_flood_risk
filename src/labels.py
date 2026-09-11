@@ -160,8 +160,8 @@ def extract_features(overwrite=False):
 def compare_distributions():
     df=pd.read_csv(DATA_PROCESSED / "training_table.csv")
     feats = ["hand", "slope", "twi", "dist_stream", "dist_euclid",
-             "elevation", "built_frac", "plan_curv", "prof_curv"]
-
+             "elevation", "built_frac", "plan_curv", "prof_curv",
+             "upstream_imperv", "fill_depth"]
     print(f"{'feature':<13} {'flooded p50':>12} {'dry p50':>10} {'ratio':>8}")
     for f in feats:
         a = df.loc[df.flooded == 1, f].median()
