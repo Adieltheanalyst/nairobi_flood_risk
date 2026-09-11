@@ -1,8 +1,9 @@
 import numpy as np
 import rasterio
-from config import DATA_PROCESSED,OUTPUTS,UNIT_COL
+from config import DATA_PROCESSED,OUTPUTS,UNIT_COL, DATA_INTERIM, CRS_PROJ
 import geopandas as gpd
 from rasterstats import zonal_stats
+from shapely.geometry import Point
 
 
 def _rescale(a,low,high, invert=False):
@@ -95,3 +96,33 @@ def unit_profile(names,path=None):
         km2 = s["count"] * 900 / 1e6
         print(f"{name:<18} {km2:9.1f} {s['mean']:7.3f} {s['p75']:7.3f} "
               f"{s['p90']:7.3f} {s['p99']:7.3f} {s['max']:7.3f}")
+
+
+
+def score_at_points(places):
+    names=list(places)
+    pts=gpd.GeoDataFrame(
+        {'name': names},
+        geometry=[Point(lon,lat) for lon,lat in places.values()],
+        crs="EPSG:4326",
+    ).to_crs(CRS_PROJ)
+    coords = [(p.x,p.y) for p in pts.geometry]
+
+    with rasterio.open(OUTPUTS / "rasters" / "hazard_index.tif") as src:
+        hz= [v[0] for v in src.sample(coords)]
+        allvals=src.read(1, masked=True).compressed()
+    with rasterio.open(DATA_INTERIM / "hand.tif") as src:
+        hd = [v[0] for v in src.sample(coords)]
+
+    print(f"{'place':<34} {'hazard':>8} {'pctile':>8} {'HAND m':>8}")
+
+    for n,h,d in zip(names,hz,hd):
+        pct = (allvals <h).mean() * 100
+        print(f"{n:<34} {h:8.3f} {pct:.1f} {d:8.2f}")
+
+KNOWN_FLOOD_POINTS = {
+    "Parklands Rd / Forest Rd junction": (36.817942,-1.267478),
+    "First Avenue Parklands":            (36.818847, -1.264850),
+    "UoN Parklands campus":              (36.818448, -1.268126),
+    # "Kibarange corridor":                (36.8215, -1.2585),
+}

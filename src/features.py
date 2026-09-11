@@ -13,6 +13,8 @@ FEATURES = {
     "dist_euclid": "dist_euclid.tif",
     "elevation":   "dem_conditioned.tif",
     "built_frac":  "built_frac_norm.tif",
+    "upstream_imperv": "upstream_imperv.tif",
+    "fill_depth":      "fill_depth.tif",
 }
 
 
