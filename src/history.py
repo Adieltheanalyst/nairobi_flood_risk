@@ -85,6 +85,8 @@ ESTATE_ALIASES = {
     "Mukuru kwa Njenga": ["Kwa Njenga"],
     "Industrial Area":   ["Viwandani"],
     "Kariobangi":    ["Kariobangi North", "Kariobangi South"],
+    "Ngong Road":   ["Kilimani", "Woodley/Kenyatta Golf", "Kabiro"],
+    "Lower Kabete": ["Kitisuru", "Mountain View"],
 }
 # Held back for validation — reported affected in the 14 March 2026
 # flash floods (Kenya Red Cross / media). Separate event, separate source.

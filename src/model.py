@@ -27,6 +27,9 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold, KFold
 
 from config import BLOCK_SIZE_M, DATA_INTERIM, DATA_PROCESSED, OUTPUTS
+from src.history import (
+        ESTATE_ALIASES, MARCH_2026_REPORTED, OSM_PLACES,
+    )
 
 TERRAIN_FEATURES = [
     "hand", "slope", "twi", "plan_curv", "prof_curv",
@@ -224,13 +227,7 @@ def predict_raster(with_history=True, overwrite=False):
 
 
 def validate_march_2026(raster=None):
-    """Held-out test: do the March 2026 reported areas score high?
-
-    These nine areas were named as flood-affected on 14 March 2026 and
-    were deliberately excluded from the history feature. The test is not
-    'do they score high' — every Nairobi neighbourhood contains some
-    river corridor. It is whether they score HIGHER than unreported areas.
-    """
+   
     import geopandas as gpd
     from rasterstats import zonal_stats
     from src.history import MARCH_2026_REPORTED, OSM_PLACES
@@ -241,13 +238,17 @@ def validate_march_2026(raster=None):
     places = gpd.read_file(OSM_PLACES).to_crs(CRS_PROJ)
     region = gpd.read_file(DATA_PROCESSED / "processing_extent.gpkg")
     places = gpd.clip(places, region.to_crs(CRS_PROJ))
-    places = places[places["name"].notna()].copy()
+    places = places[places["shapeName"].notna()].copy()
 
     def norm(s):
         return "".join(c for c in str(s).lower() if c.isalnum())
 
-    reported = {norm(n) for n in MARCH_2026_REPORTED}
-    places["reported"] = places["name"].map(lambda s: norm(s) in reported)
+    reported = set()
+    for n in MARCH_2026_REPORTED:
+        for t in ESTATE_ALIASES.get(n, [n]):
+            reported.add(norm(t))
+
+    places["reported"] = places["shapeName"].map(lambda s: norm(s) in reported)
 
     with rasterio.open(raster) as src:
         thr = np.percentile(src.read(1, masked=True).compressed(), 90)
@@ -284,7 +285,7 @@ def validate_march_2026(raster=None):
         print("0.5 = no better than chance; 1.0 = perfect separation")
 
     print("\nReported areas, ranked:")
-    print(rep[["name", "mean", "high_share"]]
+    print(rep[["shapeName", "mean", "high_share"]]
           .sort_values("high_share", ascending=False)
           .to_string(index=False, float_format=lambda x: f"{x:.3f}"))
 
