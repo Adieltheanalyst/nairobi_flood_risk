@@ -56,12 +56,12 @@ MINISTRY_ESTATES = {
 
 ESTATE_ALIASES = {
     # --- West: constituencies and neighbourhoods, not wards ---
-    "Westlands":     ["Parklands/Highridge", "Kitisuru", "Kangemi",
-                      "Mountain View", "Karura"],
+    "Westlands":     ["Parklands/Highridge", "Kangemi"],
+
     "Chiromo":       ["Parklands/Highridge"],
     "Spring Valley": ["Kitisuru", "Mountain View"],
     "Lavington":     ["Kileleshwa", "Kilimani"],
-    "Langata":       ["Nairobi West", "South-C", "Karen", "Mugumo-Ini"],
+    "Langata":       ["Nairobi West", "South-C"],
     "Madaraka":      ["Nairobi West"],
 
     # --- South ---
@@ -79,8 +79,7 @@ ESTATE_ALIASES = {
     "Fedha":         ["Kware", "Embakasi"],
 
     # --- Estates whose ward name differs slightly ---
-    "Mathare":       ["Mathare North", "Mabatini", "Huruma", "Ngei",
-                      "Mlango Kubwa", "Hospital"],
+    "Mathare":       ["Mathare North", "Mabatini", "Mlango Kubwa"],
     "South C":       ["South-C"],
     "Mukuru kwa Reuben": ["Kwa Reuben"],
     "Mukuru kwa Njenga": ["Kwa Njenga"],
