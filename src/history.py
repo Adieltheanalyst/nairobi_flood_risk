@@ -54,6 +54,39 @@ MINISTRY_ESTATES = {
     ],
 }
 
+ESTATE_ALIASES = {
+    # --- West: constituencies and neighbourhoods, not wards ---
+    "Westlands":     ["Parklands/Highridge", "Kitisuru", "Kangemi",
+                      "Mountain View", "Karura"],
+    "Chiromo":       ["Parklands/Highridge"],
+    "Spring Valley": ["Kitisuru", "Mountain View"],
+    "Lavington":     ["Kileleshwa", "Kilimani"],
+    "Langata":       ["Nairobi West", "South-C", "Karen", "Mugumo-Ini"],
+    "Madaraka":      ["Nairobi West"],
+
+    # --- South ---
+    "Kibera":        ["Laini Saba", "Lindi", "Makina", "Sarangombe",
+                      "Woodley/Kenyatta Golf"],
+
+    # --- Central ---
+    "Globe":         ["Ngara", "Nairobi Central"],
+    "Gikomba":       ["Landimawe", "Pumwani"],
+    "Kiambiu":       ["Eastleigh South", "Landimawe"],
+
+    # --- East ---
+    "Donholm":       ["Upper Savannah", "Lower Savannah"],
+    "Tassia":        ["Embakasi"],
+    "Fedha":         ["Kware", "Embakasi"],
+
+    # --- Estates whose ward name differs slightly ---
+    "Mathare":       ["Mathare North", "Mabatini", "Huruma", "Ngei",
+                      "Mlango Kubwa", "Hospital"],
+    "South C":       ["South-C"],
+    "Mukuru kwa Reuben": ["Kwa Reuben"],
+    "Mukuru kwa Njenga": ["Kwa Njenga"],
+    "Industrial Area":   ["Viwandani"],
+    "Kariobangi":    ["Kariobangi North", "Kariobangi South"],
+}
 # Held back for validation — reported affected in the 14 March 2026
 # flash floods (Kenya Red Cross / media). Separate event, separate source.
 MARCH_2026_REPORTED = [
@@ -88,9 +121,15 @@ def match_places(names=None, verbose=True):
 
     matched, missing = [], []
     for n in names:
-        k = norm(n)
-        hit = places[places["_key"].str.contains(k, na=False) |
-                     places["_key"].map(lambda s: s in k if s else False)]
+        targets = ESTATE_ALIASES.get(n, [n])
+        keys = {norm(t) for t in targets}
+
+        hit = places[places["_key"].isin(keys)]
+        if not len(hit):
+            # fall back to substring matching for Dandora Area I-IV etc.
+            k = norm(n)
+            hit = places[places["_key"].str.contains(k, na=False)]
+
         if len(hit):
             row = hit.copy()
             row["estate"] = n
